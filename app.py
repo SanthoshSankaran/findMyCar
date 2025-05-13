@@ -86,9 +86,9 @@ if len(st.session_state.persona) == len(questions):
         st.write(f"**{car}** - Score: {score:.2f}")
 
     # Feedback mechanism
-    feedback = st.radio("Was this recommendation helpful?", ["Yes", "No"], key="feedback")
+    feedback = st.slider("How would you rate this recommendation ?", 1, 5, key="feedback")
     if feedback:
-        reward = 1 if feedback == "Yes" else -1
+        reward = 1 if feedback >= 3 else -1
         persona_key = persona_to_key(st.session_state.persona)
         update_q_table(persona_key, top_cars[0][0], reward)
         st.write("Thank you for your feedback! The system will learn from this.")
