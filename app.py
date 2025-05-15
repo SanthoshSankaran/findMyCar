@@ -79,7 +79,7 @@ with st.form("user_inputs_form"):
         default = st.session_state.persona.get(key, "")
         temp_inputs[key] = st.text_input(question, value=default, key=f"input_{key}")
 
-    submitted = st.form_submit_button("Submit All")
+    submitted = st.form_submit_button("Submit")
 
 # Store all answers only when user submits
 if submitted:
@@ -96,20 +96,19 @@ if submitted:
 
 # Once all inputs are collected
 if len(st.session_state.persona) == len(questions):
-    st.success("✅ Persona created!")
-    # st.write(st.session_state.persona)
-
     # Match cars
     top_cars = match_car(st.session_state.persona, car_db, q_table)
-    st.subheader("🔍 Top Car Matches")
+    st.subheader("🔍 Your Top Car Recommendations")
     recommended = False
+    idx = 1
     for car, score in top_cars:
         if score >= 3:
             recommended = True
-            st.write(f"**{car}** - Score: {score:.2f}")
+            st.subheader(f"{idx}. **{car}**")
+            idx += 1
 
     if not recommended:
-        st.write("Sorry, I couldn't find any cars matching your preferences.");
+        st.write("Sorry, we couldn't find any cars matching your preferences. Try changing some values.")
     
     # Feedback mechanism
     feedback = st.slider("How would you rate this recommendation ?", 1, 5, key="feedback")
@@ -118,3 +117,4 @@ if len(st.session_state.persona) == len(questions):
         persona_key = persona_to_key(st.session_state.persona)
         update_q_table(persona_key, top_cars[0][0], reward)
         st.write("Thank you for your feedback! The system will learn from this.")
+
