@@ -4,12 +4,12 @@ import os
 import hashlib
 
 # Load car database
-with open("car_database.json") as f:
+with open("carDB.json") as f:
     car_db = json.load(f)
 
 # Load or initialize Q-table
-if os.path.exists("q_table.json"):
-    with open("q_table.json") as f:
+if os.path.exists("qTable.json"):
+    with open("qTable.json") as f:
         q_table = json.load(f)
 else:
     q_table = {}
@@ -26,7 +26,7 @@ def update_q_table(state, action, reward, alpha=0.1):
     if action not in q_table[state]:
         q_table[state][action] = 0
     q_table[state][action] += alpha * (reward - q_table[state][action])
-    with open("q_table.json", "w") as f:
+    with open("qTable.json", "w") as f:
         json.dump(q_table, f)
 
 # Function to match cars based on persona and Q-table
@@ -39,10 +39,12 @@ def match_car(persona, cars, q_table):
             score += 1
         if persona["fuel"].lower() in car["fuel"].lower():
             score += 1
+        else:
+            score = 0
         if persona["transmission"].lower() in car["transmission"].lower():
             score += 1
-        if persona["space"].lower() in car["space"].lower():
-            score += 1
+        # if persona["space"].lower() in car["space"].lower():
+        #     score += 1
         if persona["usage"].lower() in car["usage"].lower():
             score += 1
         # Add Q-table score if available
@@ -68,23 +70,47 @@ questions = {
 }
 
 # Collect user inputs
-for key, question in questions.items():
-    if key not in st.session_state.persona:
-        response = st.text_input(question, key=key)
-        if response:
-            st.session_state.persona[key] = response
+# Temporary storage for current inputs
+temp_inputs = {}
+
+# Input form
+with st.form("user_inputs_form"):
+    for key, question in questions.items():
+        default = st.session_state.persona.get(key, "")
+        temp_inputs[key] = st.text_input(question, value=default, key=f"input_{key}")
+
+    submitted = st.form_submit_button("Submit All")
+
+# Store all answers only when user submits
+if submitted:
+    for key, value in temp_inputs.items():
+        if value:
+            st.session_state.persona[key] = value
+    st.success("Preferences saved!")
+
+# # Show collected answers
+# if st.session_state.persona:
+#     st.subheader("Collected Preferences")
+#     for k, v in st.session_state.persona.items():
+#         st.markdown(f"**{k.title()}**: {v}")
 
 # Once all inputs are collected
 if len(st.session_state.persona) == len(questions):
     st.success("✅ Persona created!")
-    st.write(st.session_state.persona)
+    # st.write(st.session_state.persona)
 
     # Match cars
     top_cars = match_car(st.session_state.persona, car_db, q_table)
     st.subheader("🔍 Top Car Matches")
+    recommended = False
     for car, score in top_cars:
-        st.write(f"**{car}** - Score: {score:.2f}")
+        if score >= 3:
+            recommended = True
+            st.write(f"**{car}** - Score: {score:.2f}")
 
+    if not recommended:
+        st.write("Sorry, I couldn't find any cars matching your preferences.");
+    
     # Feedback mechanism
     feedback = st.slider("How would you rate this recommendation ?", 1, 5, key="feedback")
     if feedback:
